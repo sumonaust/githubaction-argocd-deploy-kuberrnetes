@@ -35,4 +35,4 @@ jobs:
             git config user.email "github-actions@noreply"
             git add k8s/pyapp-deployment.yml
             git commit -m 'docker tag updated by GHA' || echo "Already commited changes"
-            git push origin main
+            git push origin dev
