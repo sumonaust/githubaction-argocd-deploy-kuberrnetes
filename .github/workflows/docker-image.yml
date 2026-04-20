@@ -25,11 +25,13 @@ jobs:
       - name: Push Docker Image
         run: docker push sumonaust/gha-pyapp:${GITHUB_SHA::7}
 
-      # 🔥 Clone manifest repo (IMPORTANT)
-      - name: Clone Manifest Repo
-        run: |
-          git clone https://github.com/sumonaust/kubernetes-manifest.git
-          cd kubernetes-manifest
+      # ✅ FIXED: Authenticated checkout
+      - name: Checkout Manifest Repo
+        uses: actions/checkout@v4
+        with:
+          repository: sumonaust/kubernetes-manifest
+          token: ${{ secrets.GH_PAT }}
+          path: kubernetes-manifest
 
       - name: Install yq
         run: |
