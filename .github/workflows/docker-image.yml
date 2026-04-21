@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write   # 🔥 REQUIRED for push
+
 jobs:
   pyapp-ci:
     runs-on: ubuntu-latest
@@ -25,12 +28,11 @@ jobs:
       - name: Push Docker Image
         run: docker push sumonaust/gha-pyapp:${GITHUB_SHA::7}
 
-      # ✅ FIXED: Authenticated checkout
       - name: Checkout Manifest Repo
         uses: actions/checkout@v4
         with:
           repository: sumonaust/kubernetes-manifest
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ secrets.GITHUB_TOKEN }}
           path: kubernetes-manifest
 
       - name: Install yq
