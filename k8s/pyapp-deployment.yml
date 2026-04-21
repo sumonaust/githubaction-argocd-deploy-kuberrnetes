@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pyapp
+  labels:
+    app: pyapp
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pyapp
+  template:
+    metadata:
+      labels:
+        app: pyapp
+    spec:
+      containers:
+        - name: pyapp
+          image: sumonaust/gha-pyapp:14ebb5e
+          ports:
+            - containerPort: 8000
