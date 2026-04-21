@@ -5,34 +5,31 @@ on:
     branches:
       - main
 
-permissions:
-  contents: write
-
 jobs:
   pyapp-ci:
     runs-on: ubuntu-latest
 
     steps:
-      # ✅ 1. Checkout application repo
+      # ✅ Checkout APP repo (no token needed)
       - name: Checkout App Repo
         uses: actions/checkout@v4
 
-      # ✅ 2. Build Docker image
+      # ✅ Build Docker Image
       - name: Build Docker Image
         run: docker build -t sumonaust/gha-pyapp:${GITHUB_SHA::7} .
 
-      # ✅ 3. Login to Docker Hub
+      # ✅ Login Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      # ✅ 4. Push Docker image
+      # ✅ Push Image
       - name: Push Docker Image
         run: docker push sumonaust/gha-pyapp:${GITHUB_SHA::7}
 
-      # ✅ 5. Checkout manifest repo (AUTHENTICATED)
+      # 🔥 Checkout MANIFEST repo (WITH TOKEN)
       - name: Checkout Manifest Repo
         uses: actions/checkout@v4
         with:
@@ -40,30 +37,25 @@ jobs:
           token: ${{ secrets.GH_PAT }}
           path: kubernetes-manifest
 
-      # ✅ 6. Install yq
+      # ✅ Install yq
       - name: Install yq
         run: |
           sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
           sudo chmod +x /usr/bin/yq
 
-      # ✅ 7. Update image tag in deployment.yaml
+      # ✅ Update deployment.yaml
       - name: Update deployment.yaml
         run: |
           SHORT_SHA=${GITHUB_SHA::7}
           cd kubernetes-manifest
           yq -i '.spec.template.spec.containers[0].image = "sumonaust/gha-pyapp:'"$SHORT_SHA"'"' k8s/pyapp-deployment.yml
 
-      # ✅ 8. Commit & push changes
+      # ✅ Commit & Push changes
       - name: Commit & Push changes
         run: |
           cd kubernetes-manifest
           git config user.name "github-actions[bot]"
           git config user.email "github-actions@noreply.github.com"
-
           git add k8s/pyapp-deployment.yml
           git commit -m "Update image tag to ${GITHUB_SHA::7}" || echo "No changes"
-
-          # 🔥 IMPORTANT: ensure authenticated push
-          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/sumonaust/kubernetes-manifest.git
-
-          git push origin main
+          git push
