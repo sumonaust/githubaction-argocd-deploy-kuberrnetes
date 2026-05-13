@@ -3,8 +3,6 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - k8s/pyapp-deployment.yml
 
 jobs:
   pyapp-ci:
