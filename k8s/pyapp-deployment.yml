@@ -16,6 +16,6 @@ spec:
     spec:
       containers:
         - name: pyapp
-          image: sumonaust/gha-pyapp:abacd1c
+          image: sumonaust/gha-pyapp:8580073
           ports:
             - containerPort: 8000
