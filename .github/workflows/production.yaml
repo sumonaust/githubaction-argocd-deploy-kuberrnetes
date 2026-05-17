@@ -57,8 +57,3 @@ jobs:
       - name: Push Docker Image
         run: |
           docker push sumonaust/webapp:${{ steps.tag.outputs.NEW_TAG }}
-
-      - name: Push Latest Tag
-        run: |
-          docker tag sumonaust/webapp:${{ steps.tag.outputs.NEW_TAG }} sumonaust/webapp:latest
-          docker push sumonaust/webapp:latest
