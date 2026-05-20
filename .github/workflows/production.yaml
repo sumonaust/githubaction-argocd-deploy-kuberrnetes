@@ -1,59 +1,38 @@
 name: Kubernetes CI
-
 on:
   push:
     branches:
       - production
 
-permissions:
-  contents: write
-
 jobs:
-  webapp-ci:
+  pyapp-ci:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Code
+      - name: Code Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-
-      - name: Get Latest Tag
-        id: tag
-        run: |
-          latest_tag=$(git tag --sort=-v:refname | head -n 1)
-
-          if [ -z "$latest_tag" ]; then
-            new_tag="v1.0.0"
-          else
-            version=${latest_tag#v}
-            IFS='.' read -r major minor patch <<< "$version"
-            patch=$((patch + 1))
-            new_tag="v$major.$minor.$patch"
-          fi
-
-          echo "NEW_TAG=$new_tag" >> $GITHUB_OUTPUT
-
-      - name: Create Git Tag
-        run: |
-          git tag ${{ steps.tag.outputs.NEW_TAG }}
-          git push origin ${{ steps.tag.outputs.NEW_TAG }}
-
+      - name: Build Docker Image
+        run: "docker build -t sumonaust/gha-pyapp:${GITHUB_SHA::7} ."
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build Docker Image
+          username: "${{ secrets.DOCKER_USERNAME }}"
+          password: "${{ secrets.DOCKER_PASSWORD }}"
+      - name: Push Docker Image to Docker Hub
+        run: "docker push sumonaust/gha-pyapp:${GITHUB_SHA::7}"
+      - name: Install yq
         run: |
-          docker build -t sumonaust/webapp:${{ steps.tag.outputs.NEW_TAG }} .
-
-      - name: Push Docker Image
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq
+          sudo chmod +x /usr/bin/yq
+      - name: Update deplopment.yml with latest docker tag
+        run: | 
+          # Short commit hash
+          SHORT_SHA=${GITHUB_SHA::7}
+          # Update image tag in deployment.yaml
+          yq -i '.spec.template.spec.containers[0].image = "sumonaust/gha-pyapp:'"$SHORT_SHA"'"' ./k8s/pyapp-deployment.yml
+      - name: Commit deployment file changes
         run: |
-          docker push sumonaust/webapp:${{ steps.tag.outputs.NEW_TAG }}
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions@noreply"
+            git add k8s/pyapp-deployment.yml
+            git commit -m "docker tag updated by GHA"
+            git push origin production
